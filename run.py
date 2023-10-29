@@ -60,21 +60,29 @@ bot = SakiBot()
 #unload cog
 @bot.command()
 async def unload(ctx, extension):
-    await bot.unload_extension(f"cogs.{extension}")
-    await ctx.send(f"Unloaded {extension} done.")
+    if await is_diceonmat(ctx):
+        await bot.unload_extension(f"cogs.{extension}")
+        await ctx.send(f"Unloaded {extension} done.")
 
 #load cog
 @bot.command()
 async def load(ctx, extension):
-    await bot.load_extension(f"cogs.{extension}")
-    await bot.tree.sync()
-    await ctx.send(f"Reloaded {extension} done.")
+    if await is_diceonmat(ctx):
+        await bot.load_extension(f"cogs.{extension}")
+        await bot.tree.sync()
+        await ctx.send(f"Reloaded {extension} done.")
 
 #reload cog
 @bot.command()
 async def reload(ctx, extension):
-    await bot.reload_extension(f"cogs.{extension}")
-    await ctx.send(f"Reloaded {extension} done.")
+    if await is_diceonmat(ctx):
+        if extension == "all":
+            for filepath in Path('./cogs').glob('**/*.py'):
+                cog_name = Path(filepath).stem
+                await bot.reload_extension(f'cogs.{cog_name}')
+        else:
+            await bot.reload_extension(f"cogs.{extension}")
+        await ctx.send(f"Reloaded {extension} done.")
 
 @bot.listen()
 async def on_ready():
