@@ -74,15 +74,12 @@ async def load(ctx, extension):
 
 #reload cog
 @bot.command()
-async def reload(ctx, extension):
+async def rl(ctx):
     if await is_diceonmat(ctx):
-        if extension == "all":
-            for filepath in Path('./cogs').glob('**/*.py'):
-                cog_name = Path(filepath).stem
-                await bot.reload_extension(f'cogs.{cog_name}')
-        else:
-            await bot.reload_extension(f"cogs.{extension}")
-        await ctx.send(f"Reloaded {extension} done.")
+        for filepath in Path('./cogs').glob('**/*.py'):
+            cog_name = Path(filepath).stem
+            await bot.reload_extension(f'cogs.{cog_name}')
+        await ctx.send(f"Reloaded all cogs done.")
 
 @bot.listen()
 async def on_ready():

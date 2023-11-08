@@ -46,21 +46,28 @@ class ScheduleSystem(discord.ui.View):
         min_values = 1,
         max_values = 1,
         options = [
-            discord.SelectOption(label="0", value=0),
-            discord.SelectOption(label="1", value=1),
-            discord.SelectOption(label="2", value=2),
+            discord.SelectOption(label="1/21", value=2),
+            discord.SelectOption(label="1/22", value=11),
+            discord.SelectOption(label="1/23", value=35),
+            discord.SelectOption(label="1/23", value=59),
         ]
     )
     async def select_callback(self, interaction, select):
-        worksheet = self.sheets.get_worksheet(int(select.values[0]))
-        list_of_lists = worksheet.get_all_values()
+        worksheet = self.sheets.get_worksheet(0)
+        rowIndex = int(select.values[0])
+        header = worksheet.get('B1:G1')
+        date = worksheet.get(f'A{rowIndex}')[0][0]
+        if rowIndex != 2:
+            list_of_lists = worksheet.get(f'B{rowIndex}:G{rowIndex+13}')
+        else:
+            list_of_lists = worksheet.get('B2:G10')
         output = t2a(
-            body= [x for x in list_of_lists],
+            body=[x for x in header] + [x for x in list_of_lists],
             style=PresetStyle.borderless,
             alignments=[Alignment.CENTER] + [Alignment.CENTER] * (len(list_of_lists[0]) - 1)
         )
         embed = Embed(title="天馬咲希 • 班表系統",
-                    description=f"```\n{output}\n```",
+                    description=f"{date} 班表```\n{output}\n```",
                     color=0xFFDD45)
         embed.set_author(name="天馬咲希",
                         icon_url="https://i.imgur.com/IRY7pH0.jpg")
