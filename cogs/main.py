@@ -1,12 +1,16 @@
 import discord
 from discord import app_commands, Interaction, Embed
 from discord.ext import commands
-import requests, io, aiohttp, datetime
+from datetime import datetime
+import requests, io, aiohttp
+
 
 class MainCog(commands.Cog, name='main'):
     def __init__(self, bot) -> None:
         self.bot = bot
+        self.TIME_DIFFERENCE = 31539600000
 
+###########################
     @app_commands.command(
         name='關於',
         description='有關天馬咲希'
@@ -21,6 +25,7 @@ class MainCog(commands.Cog, name='main'):
         embed.set_footer(text=f"天馬咲希 v{self.bot.version} - by DiceOnMat")
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
+###########################
     @app_commands.command(
         name="倍率",
         description="計算隊伍技能倍率"
@@ -70,6 +75,7 @@ class MainCog(commands.Cog, name='main'):
         ]
     )
     async def recent_event(
+        self,
         interaction: discord.Interaction, 
         recent: app_commands.Choice[str]
     ):      
@@ -89,13 +95,12 @@ class MainCog(commands.Cog, name='main'):
             return await interaction.response.send_message(f"今期活動為{event_id}期\n活動類型為：{event_type}\n活動開始時間：{start_time}\n活動結束時間：{end_time}\n", file=discord.File(data, f'banner{event_id}.png'))
             
         if (recent.value == "next"):
-            TIME_DIFFERENCE = 31539600000
             current_event = requests.get("https://strapi.sekai.best/sekai-current-event-tw").json()['eventJson']
             event_data = requests.get("https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main/events.json").json()
             event_id = (current_event['id'] + 1)
             event = event_data[event_id - 1]
-            start_time = datetime.fromtimestamp((event['startAt'] + TIME_DIFFERENCE)/1000).strftime('%Y-%m-%d %H:%M:%S')
-            end_time = datetime.fromtimestamp((event['aggregateAt'] + TIME_DIFFERENCE)/1000).strftime('%Y-%m-%d %H:%M:%S')
+            start_time = datetime.fromtimestamp((event['startAt'] + self.TIME_DIFFERENCE)/1000).strftime('%Y-%m-%d %H:%M:%S')
+            end_time = datetime.fromtimestamp((event['aggregateAt'] + self.TIME_DIFFERENCE)/1000).strftime('%Y-%m-%d %H:%M:%S')
             event_type = "馬拉松" if event['eventType'] == "marathon" else "嘉年華"
             event_name = event['assetbundleName']
             url = f"https://storage.sekai.best/sekai-assets/home/banner/{event_name}_rip/{event_name}.webp"
@@ -107,6 +112,42 @@ class MainCog(commands.Cog, name='main'):
             return await interaction.response.send_message(f"下期活動為{event_id}期\n活動類型為：{event_type}\n活動開始時間：{start_time}\n活動結束時間：{end_time}\n", file=discord.File(data, f'banner{event_id}.png'))
                     
         return await interaction.response.send_message(f"輸入項目錯誤！請重新輸入")
+
+###########################
+    @app_commands.command(
+        name="活動查詢",
+        description="查詢任意一期活動資訊"
+    )
+    @app_commands.describe(
+        id = "活動編號/活動期數"
+    )
+    @app_commands.rename(
+        id = "編號"
+    )
+    async def find_event(
+        self,
+        interaction: discord.Interaction, 
+        id: int
+    ):      
+        if (id > 0):
+            event_data = requests.get("https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main/events.json").json()
+            if (id > len(event_data)):
+                return await interaction.response.send_message(f"查無此期！請重新輸入")
+            event = event_data[id - 1]
+            start_time = datetime.fromtimestamp((event['startAt'] + self.TIME_DIFFERENCE)/1000).strftime('%Y-%m-%d %H:%M:%S')
+            end_time = datetime.fromtimestamp((event['aggregateAt'] + self.TIME_DIFFERENCE)/1000).strftime('%Y-%m-%d %H:%M:%S')
+            event_type = "馬拉松" if event['eventType'] == "marathon" else "嘉年華"
+            event_name = event['assetbundleName']
+            url = f"https://storage.sekai.best/sekai-assets/home/banner/{event_name}_rip/{event_name}.webp"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    if resp.status != 200:
+                        return await interaction.response.send_message('Banner讀取失敗')
+                    data = io.BytesIO(await resp.read())
+            return await interaction.response.send_message(f"此活動為第{id}期\n活動類型為：{event_type}\n活動開始時間：{start_time}\n活動結束時間：{end_time}\n", file=discord.File(data, f'banner{id}.png'))
+            
+
+        return await interaction.response.send_message("輸入項目不能少於1！請重新輸入")
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(MainCog(bot))
